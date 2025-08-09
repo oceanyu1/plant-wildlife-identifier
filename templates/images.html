@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+{% if user_uploads %}
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Recent Uploads</h5>
+        <a href="{{ url_for('clear_history') }}" class="btn btn-sm btn-outline-secondary">Clear History</a>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for image in user_uploads %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <img src="{{ url_for('static', filename='uploads/' + image) }}" 
+                        class="card-img-top" style="height: 150px; object-fit: cover;">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+    <div class="noimg">
+        <img src="{{ url_for('static', filename='images/snoopy-love.gif') }}">
+        <h2>No images taken...</h2>        
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h1 class="text-center mb-4">Upload Successful!</h1>
+        
+        <div class="card">
+            <div class="card-body text-center">
+                <img src="{{ url_for('static', filename='uploads/' + filename) }}" 
+                    class="img-fluid mb-3" style="max-height: 400px;">
+                
+                <h5>{{ filename }}</h5>
+                <p class="text-muted">Species identification coming soon...</p>
+                
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Upload Another</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+/* Font Styles */
+@font-face {
+    font-family: 'Inter';
+    src: url('/static/fonts/InterVariable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Global Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    font-feature-settings: "ss01" on;
+    background-color: #212529;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+
+.noimg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

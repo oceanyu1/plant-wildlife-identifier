@@ -1,0 +1,24 @@
+# Virtual environment
+venv/
+env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Flask instance folder
+instance/
+
+# Environment variables (if you create one later)
+.env
+
+# Uploaded files (optional - depends if you want to save them)
+static/uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/settings.json
