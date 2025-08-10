@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-import os
+import requests, os, base64
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
+
+API_KEY = os.getenv("PLANT_ID_API_KEY")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -11,9 +15,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 @app.route('/')
 def index():
-    # Get recently uploaded images from session
-    user_uploads = session.get('user_uploads', [])
-    return render_template('index.html', user_uploads=user_uploads)
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -40,11 +42,30 @@ def upload_file():
     user_uploads.append(filename)
     session['user_uploads'] = user_uploads
 
-    return f"File {filename} uploaded"
+    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    with open(image_path, "rb") as img_file:
+        img_base64 = [base64.b64encode(img_file.read()).decode("ascii")]
+    
+    url="https://plant.id/api/v3/identification"
+    params = {
+        'details': 'url,common_names'
+    }
+    headers = {
+        "Api-Key": API_KEY
+    }
+    json= {
+        'images':img_base64
+    }
+    response = requests.post(url,params=params,headers=headers, json=json)
+
+    result = response.json()
+    session['last_result'] = result
+    return redirect(url_for('result', filename=filename))
 
 @app.route('/result/<filename>')
 def result(filename):
-    return render_template('result.html', filename=filename)
+    result = session.get('last_result', {})
+    return render_template('result.html', filename=filename, result=result)
 
 @app.route('/images')
 def images():
@@ -54,10 +75,9 @@ def images():
 @app.route("/clear_history")
 def clear_history():
     session.pop('user_uploads', None)
-    return redirect(url_for("index"))
+    return redirect(url_for('index'))
 
 def allowed_file(filename):
-    """Check if file is an allowed image type"""
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 

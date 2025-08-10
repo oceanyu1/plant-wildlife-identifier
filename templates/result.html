@@ -11,8 +11,8 @@
                     class="img-fluid mb-3" style="max-height: 400px;">
                 
                 <h5>{{ filename }}</h5>
-                <p class="text-muted">Species identification coming soon...</p>
-                
+                <h2>Identification Results:</h2>
+                <pre>{{ result | tojson(indent=2) }}</pre>
                 <a href="{{ url_for('index') }}" class="btn btn-primary">Upload Another</a>
             </div>
         </div>
