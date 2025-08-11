@@ -17,6 +17,10 @@ body {
     padding: 0;
 }
 
+.identification {
+    text-align: left;
+}
+
 .noimg {
     display: flex;
     flex-direction: column;

@@ -65,7 +65,8 @@ def upload_file():
 @app.route('/result/<filename>')
 def result(filename):
     result = session.get('last_result', {})
-    return render_template('result.html', filename=filename, result=result)
+    dictResult = jsonToDict(result)
+    return render_template('result.html', filename=filename, result=dictResult)
 
 @app.route('/images')
 def images():
@@ -80,6 +81,42 @@ def clear_history():
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def jsonToDict(result):
+    suggestions = result.get('result',{}).get('classification',{}).get('suggestions',[])
+    dictResult = {
+        "name": "Plant is unknown",
+        "probability": 0,
+        "url": None,
+        "edible_parts": [],
+        "description": None,
+        "common_names": [],
+        "is_plant": None
+    }
+
+    # plant check
+    is_plant = result.get("result",{}).get("is_plant",{})
+    if "binary" in is_plant:
+        dictResult["is_plant"] = is_plant["binary"]
+
+    if suggestions:
+        likely_plant = suggestions[0]  
+        dictResult["name"] = likely_plant.get("name","Plant is unknown")
+        dictResult["probability"] = likely_plant.get("probability",0)
+
+        plant_details = likely_plant.get("details",{})
+        if plant_details:
+            dictResult["url"] = plant_details.get("url",None)
+            dictResult["edible_parts"] = plant_details.get("edible_parts", None)
+            description = plant_details.get("description",{})
+            if description:
+                dictResult["description"] = description.get("value", None)            
+            common_names = plant_details.get("common_names",None)
+            if common_names:
+                dictResult["common_names"] = common_names
+
+        return dictResult
+    return False
 
 if __name__ == '__main__':
     app.run(debug=True)
