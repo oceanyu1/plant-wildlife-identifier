@@ -48,7 +48,7 @@ def upload_file():
     
     url="https://plant.id/api/v3/identification"
     params = {
-        'details': 'url,common_names'
+        'details': 'url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type'
     }
     headers = {
         "Api-Key": API_KEY

@@ -18,6 +18,13 @@
             <div class="card-body text-center">
                 <h2>Identification Results:</h2>
                 {% if result['result']['is_plant']['binary'] %}
+                    {% set plant = result['result']['classification']['suggestions'][0] %}
+                    </a>
+                    <p>What you've sent appears to be a
+                        <a href="{{ plant['details']['url'] }}" target="_blank" class="link">
+                            {{ plant['details']['common_names'][0] }} <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>, also known as {{ plant['name'] }}.
+                    </p>
                     <pre>{{ result | tojson(indent=2) }}</pre>
                 {% else %}
                     <p>Uh Oh! What you sent doesn't appear to be a plant.</p>

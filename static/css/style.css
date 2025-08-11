@@ -23,3 +23,12 @@ body {
     align-items: center;
     background-color: #000000;
 }
+
+.link i {
+    font-size: 0.8em;
+}
+
+.link {
+    color: inherit;      
+    text-decoration: none;
+}
