@@ -36,3 +36,10 @@ body {
     color: inherit;      
     text-decoration: none;
 }
+
+.gallery-img {
+    width: 100%;
+    height: 200px;         /* or any height you prefer */
+    object-fit: cover;
+    border-radius: 0.5rem; /* optional: for rounded corners */
+}
