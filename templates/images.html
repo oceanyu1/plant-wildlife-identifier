@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-{% if user_uploads %}
+{% if history %}
 <div class="card mt-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Recent Uploads</h5>
@@ -8,13 +8,71 @@
     </div>
     <div class="card-body">
         <div class="row">
-            {% for image in user_uploads %}
+            {% for result in history %}
             <div class="col-md-4 mb-3">
                 <div class="card">
-                    <img src="{{ url_for('static', filename='uploads/' + image) }}" 
-                        class="card-img-top" style="height: auto; object-fit: cover;">
+                    <button type="button" class="p-0 border-0 bg-transparent" data-bs-toggle="modal" 
+                            data-bs-target="#infoModal{{ loop.index }}">
+                        <img src="{{ url_for('static', filename='uploads/' + result.filename ) }}" 
+                            class="card-img-top" style="height: auto; object-fit: cover;">
+                    </button>
                 </div>
             </div>
+
+            <!-- pop up modal for each image -->
+            <div class="modal fade" id="infoModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content bg-dark">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Plant Info</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <img src="{{ url_for('static', filename='uploads/' + result.filename) }}" class="img-fluid mb-3">
+                            <p>What you've sent appears to be a {{ result["result"]["name"] }}
+                                , with a probability of {{ result["result"]["probability"]*100 }}%.
+                            </p>
+                            <div class="identification">
+                                <ul>
+                                    {% if result["result"]["description"] %}
+                                    <li>Description: descriptiontest<!-- {{ result["description"] }} --></li>
+                                    {% endif %}
+                                    {% if result["result"]["url"] %}
+                                    <li>Url: 
+                                        <a href="{{ result['url'] }}" target="_blank" class="link">
+                                            {{ result["result"]['url'] }} <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% if result["result"]["common_names"] %}
+                                    <li>Common names:
+                                        {% for name in result["result"]["common_names"] %}
+                                            {{ name }}{% if not loop.last %}, {% else %}. {% endif %}
+                                        {% endfor %}
+                                    </li>
+                                    {% else %}
+                                    <li>Common names: None</li>
+                                    {% endif %}
+                                    {% if result["result"]["edible_parts"] %}
+                                    <li>Edible parts:
+                                        {% if result["result"]["edible_parts"] %}
+                                            {% for part in result["result"]["edible_parts"] %}
+                                                {{ part }}, 
+                                            {% endfor %}
+                                        {% endif %}
+                                    </li>
+                                    {% else %}
+                                    <li>
+                                        Plant is not edible. Please don't eat!
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {% endfor %}
         </div>
     </div>
