@@ -1,8 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 import requests, os, base64
 import time
 import random
+import hashlib
 from datetime import datetime
+from flask_caching import Cache
+import magic  # pip install python-magic
+from PIL import Image
+from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -10,7 +15,12 @@ API_KEY = os.getenv("PLANT_ID_API_KEY")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+
+# Initialize Flask-Caching with Redis
+cache = Cache(app)
 
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -39,40 +49,62 @@ def upload_file():
     
     # name file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    original_filename = file.filename
+    original_filename = secure_filename(file.filename)
     filename = f"{timestamp}_{original_filename}"
 
-    # save to uploads
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-    # decode to base64 for API format
+    # save image, after safety checks
     image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    with open(image_path, "rb") as img_file:
-        img_base64 = [base64.b64encode(img_file.read()).decode("ascii")]
-    
-    print("🧪 USING FAKE API FOR TESTING")
-    fake_result = get_fake_plant_response(filename)
-    result = fake_result
-
-    # API CODE - CURRENTLY TESTING NOT USING!
-    """ url="https://plant.id/api/v3/identification"
-    params = {
-        'details': 'url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type'
-    }
-    headers = {
-        "Api-Key": API_KEY
-    }
-    json= {
-        'images':img_base64
-    }
-    response = requests.post(url,params=params,headers=headers, json=json)
-
-    result = response.json() """
-
+    try:
+        file.save(image_path)
+        if not image_safety_check(image_path):
+            os.remove(image_path)
+            print("Unsafe image, removed")
+        # check file size 
+        file_size = os.path.getsize(image_path)
+        max_size = 10 * 1024 * 1024  # 10MB
         
-    dictResult = jsonToDict(result)
+        if file_size > max_size:
+            os.remove(image_path)
+            flash('File too large')
+            return redirect(url_for('index'))
+    except Exception as e:
+        flash('Error processing file. Please try again.')
+        return redirect(url_for('index'))
+    
+    image_hash = get_image_hash(image_path)
+    result = get_cached_result(image_hash)
+
+    if not result:
+        # decode to base64 for API format
+        with open(image_path, "rb") as img_file:
+            img_base64 = [base64.b64encode(img_file.read()).decode("ascii")]
+
+        # fake api
+        """ print("🧪 USING FAKE API FOR TESTING")
+        fake_result = get_fake_plant_response(filename)
+        result = fake_result  """
+
+        # API CODE - CURRENTLY TESTING NOT USING!
+        url="https://plant.id/api/v3/identification"
+        params = {
+            'details': 'url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type'
+        }
+        headers = {
+            "Api-Key": API_KEY
+        }
+        json= {
+            'images':img_base64
+        }
+        response = requests.post(url,params=params,headers=headers, json=json)
+
+        result = response.json()
+
+        save_to_cache(image_hash, result)
+
+    dictResult = json_to_dict(result)
     results_history = session.get('results_history', {})
 
+    # if its a plant and was not called from cache previously, save to history to be added to image gallery
     if dictResult["is_plant"]:
         results_history[filename] = shorten(dictResult)
         session['results_history'] = results_history
@@ -84,7 +116,7 @@ def result(filename):
     results_history = session.get('results_history', {})
     dictResult = results_history.get(filename)
     
-    # save result to session history
+    # if no result returned from filename, the result is not a plant
     if not dictResult:
         dictResult = {"is_plant": False}
 
@@ -97,17 +129,35 @@ def images():
     history = [{"filename": fn, "result": res} for fn, res in results_history.items()]
     return render_template('images.html', history=history)
 
+@app.route('/image/<filename>')
+def load_image(filename):
+    # validate filename format
+    if not filename or '..' in filename or '/' in filename:
+        abort(404)
+    
+    # check if file exists and is in session history (access control)
+    results_history = session.get('results_history', {})
+    if filename not in results_history:
+        abort(404)  # User can only access their own uploaded images
+    
+    # ensure it's an image file
+    if not allowed_file(filename):
+        abort(404)
+    
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    if not os.path.exists(file_path):
+        abort(404)
+    
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.route("/clear_history")
 def clear_history():
     session.pop('results_history', None)
     return redirect(url_for('index'))
 
-def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 # converts JSON to formatted python dict
-def jsonToDict(result):
+def json_to_dict(result):
     suggestions = result.get('result',{}).get('classification',{}).get('suggestions',[])
     dictResult = {
         "name": "Plant is unknown",
@@ -260,6 +310,58 @@ def get_fake_plant_response(filename):
     }
     
     return fake_response
+
+def get_image_hash(file_path):
+    # https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
+
+    sha256 = hashlib.sha256()
+
+    with open(file_path, "rb") as f:
+        while True:
+            data = f.read(65536) # arbitrary number to reduce RAM usage
+            if not data:
+                break
+            sha256.update(data)
+
+    return sha256.hexdigest()
+
+def get_cached_result(image_hash):
+    return cache.get(image_hash)
+    
+def save_to_cache(image_hash, result):
+    cache.set(image_hash, result, timeout=60*60*24)
+
+def image_safety_check(file_path):
+    try:
+        mime_type = magic.from_file(file_path, mime=True)
+        allowed_img_types = ['image/jpeg','image/png','image/gif','image/webp']
+        if mime_type not in allowed_img_types:
+            return False
+        
+        with Image.open(file_path) as img:
+            img.verify()
+        
+        return True
+    except Exception as e:
+        print("File not safe")
+        return False
+    
+def allowed_file(filename):
+    if '.' not in filename or not filename:
+        return False
+    
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    DISALLOWED_EXTENSIONS = {'php', 'exe', 'bat', 'sh', 'py', 'js', 'html', 'htm'}
+
+    extension = filename.rsplit('.', 1)[1].lower()   
+
+    if extension not in ALLOWED_EXTENSIONS or extension in DISALLOWED_EXTENSIONS:
+        return False
+
+    if any(char in filename for char in ['<', '>', ':', '"', '/', '\\', '|', '?', '*']):
+        return False
+    
+    return True
 
 if __name__ == '__main__':
     app.run(debug=True)

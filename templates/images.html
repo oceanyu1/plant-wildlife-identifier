@@ -17,7 +17,6 @@
                         <p>This will permanently delete all images from your gallery. Are you sure you want to continue?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="modal">Close</button>
                         <a href="{{ url_for('clear_history') }}" class="btn btn-sm btn-outline-light">Clear Gallery</a>
                     </div>
                 </div>
@@ -31,7 +30,7 @@
                 <div class="card">
                     <button type="button" class="p-0 border-0 bg-transparent" data-bs-toggle="modal" 
                             data-bs-target="#infoModal{{ loop.index }}">
-                        <img src="{{ url_for('static', filename='uploads/' + result.filename ) }}" 
+                        <img src="{{ url_for('load_image', filename=result.filename) }}" 
                             class="card-img-top gallery-img" alt="Uploaded image"> 
                     </button>
                 </div>
@@ -46,7 +45,7 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <img src="{{ url_for('static', filename='uploads/' + result.filename) }}" class="img-fluid mb-3" alt="Uploaded image">
+                            <img src="{{ url_for('load_image', filename=result.filename) }}" class="img-fluid mb-3" alt="Uploaded image">
                             <p>What you've sent appears to be a {{ result["result"]["name"] }}
                                 , with a probability of {{ result["result"]["probability"]*100 }}%.
                             </p>

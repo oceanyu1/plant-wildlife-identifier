@@ -7,7 +7,7 @@
         
         <div class="card">
             <div class="card-body text-center">
-                <img src="{{ url_for('static', filename='uploads/' + filename) }}" 
+                <img src="{{ url_for('load_image', filename=filename) }}" 
                     class="img-fluid mb-3" style="max-height: 400px;">
                 
                 <h5>{{ filename }}</h5>

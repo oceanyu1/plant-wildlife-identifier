@@ -14,7 +14,7 @@ instance/
 .env
 
 # Uploaded files (optional - depends if you want to save them)
-static/uploads/
+uploads/
 
 # OS files
 .DS_Store
