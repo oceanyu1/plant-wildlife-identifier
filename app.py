@@ -59,14 +59,6 @@ def upload_file():
         if not image_safety_check(image_path):
             os.remove(image_path)
             print("Unsafe image, removed")
-        # check file size 
-        file_size = os.path.getsize(image_path)
-        max_size = 10 * 1024 * 1024  # 10MB
-        
-        if file_size > max_size:
-            os.remove(image_path)
-            flash('File too large')
-            return redirect(url_for('index'))
     except Exception as e:
         flash('Error processing file. Please try again.')
         return redirect(url_for('index'))
@@ -198,8 +190,8 @@ def shorten(dictResult, max_length=500):
     return session_result
 
 def get_fake_plant_response(filename):
-    """Generate fake API responses for testing without hitting the real API"""
-    
+    """Generate fake API responses for testing without hitting the real API."""
+    # MADE WITH AI
     # List of fake plants with realistic data
     fake_plants = [
         {
@@ -312,7 +304,7 @@ def get_fake_plant_response(filename):
     return fake_response
 
 def get_image_hash(file_path):
-    # https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
+    # credit to https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
 
     sha256 = hashlib.sha256()
 
@@ -327,7 +319,7 @@ def get_image_hash(file_path):
 
 def get_cached_result(image_hash):
     return cache.get(image_hash)
-    
+
 def save_to_cache(image_hash, result):
     cache.set(image_hash, result, timeout=60*60*24)
 

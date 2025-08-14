@@ -1,23 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <h1 class="text-center mb-4">Identify Local Plants & Wildlife</h1>
-        
-        <div class="card">
-            <div class="card-body">
-                <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="file" class="form-label">Upload a photo:</label>
-                        <input type="file" class="form-control" id="file" name="file" accept="image/*" required>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">Identify Species</button>
-                </form>
+<div class="intro">
+    <h1 class="mb-4"><strong>Identify any plant around you with the click of a button.</strong></h1>
+    <p>Using Planttionary, you can upload a photo of any plant and get a response within seconds.</p>
+</div>
+<hr>
+<div class="swiper mySwiper">
+    <div class="swiper-wrapper">
+        <div class="swiper-slide"><img src="{{ url_for('static', filename='images/example1.png') }}" alt="Plant 1"></div>
+        <div class="swiper-slide"><img src="{{ url_for('static', filename='images/example2.png') }}" alt="Plant 2"></div>
+        <div class="swiper-slide"><img src="{{ url_for('static', filename='images/example3.png') }}" alt="Plant 3"></div>
+        <div class="swiper-slide"><img src="{{ url_for('static', filename='images/example4.png') }}" alt="Plant 4"></div>
+    </div>
+    <!-- Pagination (dots) -->
+    <div class="swiper-pagination"></div>
+</div>
+<hr>
+<div class="card upload">
+    <div class="card-body">
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="file" class="form-label">Upload a photo:</label>
+                <input type="file" class="form-control" id="file" name="file" accept="image/*" required>
             </div>
-        </div>
-        
-        <!-- Show recent uploads -->
+            <button type="submit" class="btn btn-success w-100">Identify Plant</button>
+        </form>
     </div>
 </div>
+
 {% endblock %}
