@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("PLANT_ID_API_KEY")
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -19,7 +20,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
-# Initialize Flask-Caching with Redis
+# Initialize Flask-Caching
 cache = Cache(app)
 
 # Create upload directory if it doesn't exist
@@ -72,26 +73,26 @@ def upload_file():
             img_base64 = [base64.b64encode(img_file.read()).decode("ascii")]
 
         # fake api
-        """ print("🧪 USING FAKE API FOR TESTING")
-        fake_result = get_fake_plant_response(filename)
-        result = fake_result  """
+        if DEMO_MODE:
+            print("🧪 USING FAKE API FOR TESTING")
+            fake_result = get_fake_plant_response(filename)
+            result = fake_result 
+        else:
+            # API CODE - CURRENTLY TESTING NOT USING!
+            url="https://plant.id/api/v3/identification"
+            params = {
+                'details': 'url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type'
+            }
+            headers = {
+                "Api-Key": API_KEY
+            }
+            json= {
+                'images':img_base64
+            }
+            response = requests.post(url,params=params,headers=headers, json=json)
 
-        # API CODE - CURRENTLY TESTING NOT USING!
-        url="https://plant.id/api/v3/identification"
-        params = {
-            'details': 'url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type'
-        }
-        headers = {
-            "Api-Key": API_KEY
-        }
-        json= {
-            'images':img_base64
-        }
-        response = requests.post(url,params=params,headers=headers, json=json)
-
-        result = response.json()
-
-        save_to_cache(image_hash, result)
+            result = response.json()
+            save_to_cache(image_hash, result)
 
     dictResult = json_to_dict(result)
     results_history = session.get('results_history', {})

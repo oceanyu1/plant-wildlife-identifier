@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 {% if history %}
-<div class="card mt-4">
+<div class="card mt-4 gallery">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Recent Uploads</h5>
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#areyousure">Clear History</button>
@@ -49,7 +49,7 @@
                             <p>What you've sent appears to be a {{ result["result"]["name"] }}
                                 , with a probability of {{ result["result"]["probability"]*100 }}%.
                             </p>
-                            <div class="identification">
+                            <div class="text-left">
                                 <ul>
                                     {% if result["result"]["description"] %}
                                     <li>Description: descriptiontest<!-- {{ result["description"] }} --></li>
@@ -95,9 +95,14 @@
     </div>
 </div>
 {% else %}
-    <div class="noimg">
-        <img src="{{ url_for('static', filename='images/snoopy-love.gif') }}">
-        <h2 class="mt-5">No images taken...</h2>        
+    <div class="card mt-4 noimg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Uploads</h5>
+        </div>
+        <div class="card-body noimg">
+            <img src="{{ url_for('static', filename='images/snoopy-love.gif') }}">
+            <h3 class="mt-5">No plant photos yet... upload one now to start your collection!</h2>     
+        </div>
     </div>
 {% endif %}
 {% endblock %}
