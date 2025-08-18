@@ -66,6 +66,20 @@ html {
     justify-content: flex-start;
     align-items: flex-start;
     padding: 50px 200px;
+
+    animation: fadeInUp 1s ease-out;
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Infinite scroll in index */
