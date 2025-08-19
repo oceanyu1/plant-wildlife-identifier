@@ -36,12 +36,14 @@ Deployment: coming soon.
 
 • Session Optimization: Implemented data truncation to solve Flask's 4KB cookie limit:
 
-pythondef truncate_for_session(dictResult, max_description_length=500):
+def shorten(dictResult, max_length=500):
+    
     # Intelligent truncation preserving essential data
 
 • Caching Strategy: File-based caching system to minimize API calls:
 
-pythondef get_cached_result(image_hash):
+def get_cached_result(image_hash):
+    
     # Hash-based caching for duplicate image detection
 
 **Performance:**
@@ -56,10 +58,7 @@ Error Recovery: Graceful fallbacks for API timeouts/failures
 
 # **For Employers:**
 This project demonstrates:
-API Integration skills with external services.
-Performance Optimization through caching strategies.
-User Experience considerations (session management, error handling).
-Production Readiness (environment configs, resource management).
+API Integration skills with external services, Performance Optimization through caching strategies, User Experience considerations (session management, error handling), Production Readiness (environment configs, resource management).
 
 Want to see it with live API calls? Contact me for a private demo session where I can show the full functionality with real Plant.id integration.
 
