@@ -87,12 +87,10 @@ def upload_file():
 
             # fake api
             if DEMO_MODE:
-                print("🧪 USING FAKE API FOR TESTING")
                 fake_result = get_fake_plant_response(filename)
                 result = fake_result 
             else:
                 # api code
-                print("Using real api")
                 url="https://plant.id/api/v3/identification"
                 params = {
                     "details": "url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type"
@@ -182,6 +180,16 @@ def clear_history():
 def cleanup():
     results_history = session.get("results_history", {})
     session["results_history"] = remove_old_images(results_history)
+
+@app.errorhandler(500)
+def internal_error(error):
+    flash("Something went wrong on our end. Please try again.", "error")
+    return redirect(url_for("index"))
+
+@app.errorhandler(404)
+def not_found(error):
+    flash("Page not found.", "error") 
+    return redirect(url_for("index"))
 
 # converts JSON to formatted python dict
 def json_to_dict(result):
@@ -408,4 +416,4 @@ def remove_old_images(results_history):
     return valid_results_history
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
