@@ -36,7 +36,7 @@ def upload_file():
     try:
         # Limits uploads to 10
         uploads = session.get("upload_count", 0)
-        if uploads >= 10:
+        if uploads >= 2:
             flash("Upload limit reached (10 per session). Clear history to continue.", "error")
             return redirect(url_for("index"))
         
