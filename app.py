@@ -36,7 +36,7 @@ def upload_file():
     try:
         # Limits uploads to 10
         uploads = session.get("upload_count", 0)
-        if uploads >= 2:
+        if uploads >= 10:
             flash("Upload limit reached (10 per session). Clear history to continue.", "error")
             return redirect(url_for("index"))
         
@@ -52,7 +52,7 @@ def upload_file():
         # file checks
         file = request.files["file"]
         if file.filename == "":
-            flash("Please choose a file!") 
+            flash("Please choose a file!", "error") 
             return redirect(url_for("index"))
 
         # file checks
@@ -104,7 +104,7 @@ def upload_file():
                     "images": img_base64
                 }
                 response = requests.post(url,params=params,headers=headers, json=json_data, timeout=30)
-                if response.status_code != 200:
+                if response.status_code not in [200,201]:
                     flash(f"Identification failed. Please try again later. (Error: {response.status_code})", "error")
                     return redirect(url_for("index"))
 
@@ -175,6 +175,7 @@ def load_image(filename):
 def clear_history():
     session.pop("results_history", None)
     session.pop("upload_count", None)
+    flash("History cleared successfully!","info")
     return redirect(url_for("index"))
 
 @app.before_request
@@ -356,7 +357,7 @@ def get_cached_result(image_hash):
     return cache.get(image_hash)
 
 def save_to_cache(image_hash, result):
-    cache.set(image_hash, result, timeout=60*60*24)
+    cache.set(image_hash, result, timeout=EXPIRY_SECONDS)
 
 def image_safety_check(file_path):
     try:
@@ -402,6 +403,7 @@ def remove_old_images(results_history):
                     os.remove(file_path)
             except OSError as e:
                 print("Failed to remove file")
+                pass
 
     return valid_results_history
 

@@ -54,7 +54,7 @@
                             <div class="text-left">
                                 <ul>
                                     {% if result["result"]["description"] %}
-                                    <li>Description: descriptiontest<!-- {{ result["description"] }} --></li>
+                                    <li>Description: {{ result["result"]["description"] }}</li>
                                     {% endif %}
                                     {% if result["result"]["url"] %}
                                     <li>Url: 

@@ -1,82 +1,73 @@
 # 🌿 Planttionary
-A Flask-based web application that identifies plants using the Plant.id API and provides detailed botanical information, including a gallery showing past submissions, and...
+A Flask-based web application that identifies plants using the **Plant.id API** and displays detailed botanical information.  
+Includes a gallery of past submissions, secure file handling, and a demo mode for public deployment.
 
-Features Implemented:
+---
 
-• Plant Identification: Accurate plant recognition via Plant.id API.
+## ✨ Features
+- **Plant Identification**: Integrates with Plant.id API (private demo) or simulated results (public demo).
+- **Session Management**: User-specific history with upload tracking and cleanup.
+- **Caching System**: Hash-based caching to reduce redundant API calls.
+- **Secure File Handling**: MIME type validation, image verification, and safe filenames.
+- **Responsive Gallery**: View previously uploaded images and results.
+- **Error Handling**: Graceful fallbacks for API errors, timeouts, and invalid uploads.
+- **Demo Mode**: Simulated plant responses for unlimited public usage without consuming API quota.
 
-• Session Management: User-specific history with optimized cookie storage.
+---
 
-• Caching System: File-based caching to reduce API calls and improve performance.
+## 🚀 Live Demo
+**[View Live Demo](https://your-deployment-url.com)**  
+⚠️ Runs in **demo mode** with simulated results.  
+For employers: I can provide a **private demo with live Plant.id API integration** on request.
 
-• Image Processing: Base64 encoding for API compatibility.
+---
 
-• Responsive Gallery: Display of user's uploaded images and results.
+## 🛠️ Technologies
+- **Backend**: Python (Flask)  
+- **API Integration**: Plant.id REST API  
+- **Storage**: Flask session management & caching  
+- **Frontend**: HTML, CSS, Jinja templates  
+- **Deployment**: (Render / Railway / Fly.io)  
 
-• Error Handling: Comprehensive validation and user feedback.
+---
 
-# **Live Demo**
-View Live Demo - Running in demo mode with pre-cached results.
+## ⚡ Technical Highlights
+**Architecture**
+- Session-aware history with automatic cleanup of old uploads.
+- Hash-based caching (`SHA-256`) to detect duplicate images.  
+- Environment-configurable demo mode for deployment flexibility.  
 
-Note: The live demo uses cached responses to demonstrate functionality without consuming API quota. For employers, I can provide a private demo with live API calls upon request.
+**Performance**
+- Caching reduces redundant API calls by ~60%.  
+- Data truncation prevents Flask session cookie overflow.  
+- Automatic removal of expired uploads to save storage.  
 
-# **Technologies Used:**
-Backend: Python (Flask).
+**Security**
+- Validates uploaded files with `python-magic` and Pillow.  
+- Blocks dangerous extensions (`.php`, `.exe`, etc.) and unsafe filenames.  
 
-API Integration: Plant.id REST API.
+---
 
-Storage: File-based caching, session management.
-
-Frontend: HTML, CSS.
-
-Deployment: coming soon.
-
-# **Technical Highlights:**
-**Architecture:**
-
-• Session Optimization: Implemented data truncation to solve Flask's 4KB cookie limit:
-
-pythondef truncate_for_session(dictResult, max_description_length=500):
-    # Intelligent truncation preserving essential data
-
-• Caching Strategy: File-based caching system to minimize API calls:
-
-pythondef get_cached_result(image_hash):
-    # Hash-based caching for duplicate image detection
-
-**Performance:**
-
-API Call Reduction: Implemented image hash-based caching (reduces redundant calls by ~60%)
-
-Session Size Management: Data truncation prevents cookie overflow issues
-
-Storage Efficiency: Automatic cleanup of old uploads
-
-Error Recovery: Graceful fallbacks for API timeouts/failures
-
-# **For Employers:**
+## 👨‍💻 For Employers
 This project demonstrates:
-API Integration skills with external services.
-Performance Optimization through caching strategies.
-User Experience considerations (session management, error handling).
-Production Readiness (environment configs, resource management).
+- **API Integration** with third-party services.  
+- **Performance Optimization** through caching and deduplication.  
+- **User Experience** considerations (session limits, helpful error messages).  
+- **Production Readiness** with environment configs, secure file handling, and deployment planning.  
 
-Want to see it with live API calls? Contact me for a private demo session where I can show the full functionality with real Plant.id integration.
+> Want to see the live API version?  
+> I can provide a **private demo session** with full Plant.id integration.  
 
-# **Local Development Setup**
+---
+
+## 🧑‍💻 Local Development Setup
 ```bash
 # Clone and install dependencies
 pip install -r requirements.txt
 
 # Set up environment variables
 echo "PLANT_ID_API_KEY=your_key_here" > .env
-echo "DEMO_MODE=false" >> .env  # Set to true for demo mode
+echo "DEMO_MODE=false" >> .env  # true = simulated responses, false = live API
 
-# Run application
+# Run the app
 python app.py
-```
-
-📸 Screenshots
-(future screenshots coming)
-
-Built with ❤️ as a portfolio project demonstrating full-stack development skills
