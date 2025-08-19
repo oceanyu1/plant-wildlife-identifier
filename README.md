@@ -16,7 +16,7 @@ Includes a gallery of past submissions, secure file handling, and a demo mode fo
 ---
 
 ## 🚀 Live Demo
-**[View Live Demo](https://your-deployment-url.com)**  
+**[View Live Demo](https://future-deployment-url.com)**  
 ⚠️ Runs in **demo mode** with simulated results.  
 For employers: I can provide a **private demo with live Plant.id API integration** on request.
 
@@ -27,7 +27,7 @@ For employers: I can provide a **private demo with live Plant.id API integration
 - **API Integration**: Plant.id REST API  
 - **Storage**: Flask session management & caching  
 - **Frontend**: HTML, CSS, Jinja templates  
-- **Deployment**: (Render / Railway / Fly.io)  
+- **Deployment**: (coming soon)  
 
 ---
 
