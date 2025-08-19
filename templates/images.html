@@ -76,7 +76,7 @@
                                     <li>Edible parts:
                                         {% if result["result"]["edible_parts"] %}
                                             {% for part in result["result"]["edible_parts"] %}
-                                                {{ part }}, 
+                                                {{ part }}{% if not loop.last %}, {% else %}. {% endif %} 
                                             {% endfor %}
                                         {% endif %}
                                     </li>

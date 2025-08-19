@@ -13,123 +13,150 @@ load_dotenv()
 
 API_KEY = os.getenv("PLANT_ID_API_KEY")
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
+EXPIRY_SECONDS = 300 if DEMO_MODE else 86400
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['CACHE_TYPE'] = 'SimpleCache'
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-key-change-in-production")
+app.config["UPLOAD_FOLDER"] = "uploads"
+app.config["CACHE_TYPE"] = "SimpleCache"
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
 # Initialize Flask-Caching
 cache = Cache(app)
 
 # Create upload directory if it doesn't exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/upload', methods=['POST'])
+@app.route("/upload", methods=["POST"])
 def upload_file():
-    # file checks
-    if 'file' not in request.files:
-        flash('No file was selected!', 'error')
-        return redirect(url_for('index'))
-    
-    # file checks
-    file = request.files['file']
-    if file.filename == '':
-        flash('Please choose a file!') 
-        return redirect(url_for('index'))
-
-    # file checks
-    if not allowed_file(file.filename):
-        flash('Invalid file type! Please upload an image.')
-        return redirect(url_for('index'))
-    
-    # name file
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    original_filename = secure_filename(file.filename)
-    filename = f"{timestamp}_{original_filename}"
-
-    # save image, after safety checks
-    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     try:
-        file.save(image_path)
-        if not image_safety_check(image_path):
-            os.remove(image_path)
-            print("Unsafe image, removed")
+        # Limits uploads to 10
+        uploads = session.get("upload_count", 0)
+        if uploads >= 10:
+            flash("Upload limit reached (10 per session). Clear history to continue.", "error")
+            return redirect(url_for("index"))
+        
+        if not DEMO_MODE and not API_KEY:
+            flash("Plant identification service is temporarily unavailable", "error")
+            return redirect(url_for("index"))
+
+        # file checks
+        if "file" not in request.files:
+            flash("No file was selected!", "error")
+            return redirect(url_for("index"))
+        
+        # file checks
+        file = request.files["file"]
+        if file.filename == "":
+            flash("Please choose a file!") 
+            return redirect(url_for("index"))
+
+        # file checks
+        if not allowed_file(file.filename):
+            flash("Invalid file type! Please upload an image.")
+            return redirect(url_for("index"))
+        
+        # name file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        original_filename = secure_filename(file.filename)
+        filename = f"{timestamp}_{original_filename}"
+
+        # save image, after safety checks
+        image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        try:
+            file.save(image_path)
+            if not image_safety_check(image_path):
+                os.remove(image_path)
+                flash("File failed security check. Please try a different image.", "error")
+                return redirect(url_for("index"))
+        except Exception as e:
+            flash("Error processing file. Please try again.", "error")
+            return redirect(url_for("index"))
+        
+        image_hash = get_image_hash(image_path)
+        result = get_cached_result(image_hash)
+
+        if not result:
+            # decode to base64 for API format
+            with open(image_path, "rb") as img_file:
+                img_base64 = [base64.b64encode(img_file.read()).decode("ascii")]
+
+            # fake api
+            if DEMO_MODE:
+                print("🧪 USING FAKE API FOR TESTING")
+                fake_result = get_fake_plant_response(filename)
+                result = fake_result 
+            else:
+                # api code
+                print("Using real api")
+                url="https://plant.id/api/v3/identification"
+                params = {
+                    "details": "url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type"
+                }
+                headers = {
+                    "Api-Key": API_KEY
+                }
+                json_data= {
+                    "images": img_base64
+                }
+                response = requests.post(url,params=params,headers=headers, json=json_data, timeout=30)
+                if response.status_code != 200:
+                    flash(f"Identification failed. Please try again later. (Error: {response.status_code})", "error")
+                    return redirect(url_for("index"))
+
+                result = response.json()
+                save_to_cache(image_hash, result)
+
+        session["upload_count"] = uploads + 1
+        dictResult = json_to_dict(result)
+        results_history = session.get("results_history", {})
+
+        # if its a plant and was not called from cache previously, save to history to be added to image gallery
+        if dictResult["is_plant"]:
+            results_history[filename] = shorten(dictResult)
+            session["results_history"] = results_history
+
+        return redirect(url_for("result", filename=filename))
+    except requests.Timeout:
+        flash("Request timed out. Please try again.", "error")
+        return redirect(url_for("index"))
     except Exception as e:
-        flash('Error processing file. Please try again.')
-        return redirect(url_for('index'))
-    
-    image_hash = get_image_hash(image_path)
-    result = get_cached_result(image_hash)
+        flash("Uh Oh, something went wrong.")
+        return redirect(url_for("index"))
 
-    if not result:
-        # decode to base64 for API format
-        with open(image_path, "rb") as img_file:
-            img_base64 = [base64.b64encode(img_file.read()).decode("ascii")]
-
-        # fake api
-        if DEMO_MODE:
-            print("🧪 USING FAKE API FOR TESTING")
-            fake_result = get_fake_plant_response(filename)
-            result = fake_result 
-        else:
-            # API CODE - CURRENTLY TESTING NOT USING!
-            url="https://plant.id/api/v3/identification"
-            params = {
-                'details': 'url,common_names,description,treatment,edible_parts,best_watering,best_light_condition,best_soil_type'
-            }
-            headers = {
-                "Api-Key": API_KEY
-            }
-            json= {
-                'images':img_base64
-            }
-            response = requests.post(url,params=params,headers=headers, json=json)
-
-            result = response.json()
-            save_to_cache(image_hash, result)
-
-    dictResult = json_to_dict(result)
-    results_history = session.get('results_history', {})
-
-    # if its a plant and was not called from cache previously, save to history to be added to image gallery
-    if dictResult["is_plant"]:
-        results_history[filename] = shorten(dictResult)
-        session['results_history'] = results_history
-
-    return redirect(url_for('result', filename=filename))
-
-@app.route('/result/<filename>')
+@app.route("/result/<filename>")
 def result(filename):
-    results_history = session.get('results_history', {})
+    results_history = session.get("results_history", {})
     dictResult = results_history.get(filename)
     
     # if no result returned from filename, the result is not a plant
     if not dictResult:
         dictResult = {"is_plant": False}
 
-    return render_template('result.html', filename=filename, result=dictResult)
+    return render_template("result.html", filename=filename, result=dictResult)
 
-@app.route('/images')
+@app.route("/images")
 def images():
-    results_history = session.get('results_history', {})
-    # Convert to list of dicts for template
-    history = [{"filename": fn, "result": res} for fn, res in results_history.items()]
-    return render_template('images.html', history=history)
+    results_history = session.get("results_history", {})
 
-@app.route('/image/<filename>')
+    # Convert to list of dicts for template
+    # The reason for this is because my images.html image loading was based on an old dictionary format and
+    # I'm too lazy to change it
+    history = [{"filename": fn, "result": res} for fn, res in results_history.items()]
+    return render_template("images.html", history=history)
+
+@app.route("/image/<filename>")
 def load_image(filename):
     # validate filename format
-    if not filename or '..' in filename or '/' in filename:
+    if not filename or ".." in filename or "/" in filename:
         abort(404)
     
     # check if file exists and is in session history (access control)
-    results_history = session.get('results_history', {})
+    results_history = session.get("results_history", {})
     if filename not in results_history:
         abort(404)  # User can only access their own uploaded images
     
@@ -137,29 +164,36 @@ def load_image(filename):
     if not allowed_file(filename):
         abort(404)
     
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
     
     if not os.path.exists(file_path):
         abort(404)
     
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 @app.route("/clear_history")
 def clear_history():
-    session.pop('results_history', None)
-    return redirect(url_for('index'))
+    session.pop("results_history", None)
+    session.pop("upload_count", None)
+    return redirect(url_for("index"))
+
+@app.before_request
+def cleanup():
+    results_history = session.get("results_history", {})
+    session["results_history"] = remove_old_images(results_history)
 
 # converts JSON to formatted python dict
 def json_to_dict(result):
-    suggestions = result.get('result',{}).get('classification',{}).get('suggestions',[])
+    suggestions = result.get("result",{}).get("classification",{}).get("suggestions",[])
     dictResult = {
         "name": "Plant is unknown",
         "probability": 0,
         "url": None,
-        "edible_parts": [],
+        "edible_parts": None,
         "description": None,
-        "common_names": [],
-        "is_plant": None
+        "common_names": None,
+        "is_plant": None,
+        "uploaded_at": time.time()
     }
 
     # plant check
@@ -327,7 +361,7 @@ def save_to_cache(image_hash, result):
 def image_safety_check(file_path):
     try:
         mime_type = magic.from_file(file_path, mime=True)
-        allowed_img_types = ['image/jpeg','image/png','image/gif','image/webp']
+        allowed_img_types = ["image/jpeg","image/png","image/gif","image/webp"]
         if mime_type not in allowed_img_types:
             return False
         
@@ -336,25 +370,40 @@ def image_safety_check(file_path):
         
         return True
     except Exception as e:
-        print("File not safe")
         return False
     
 def allowed_file(filename):
-    if '.' not in filename or not filename:
+    if "." not in filename or not filename:
         return False
     
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-    DISALLOWED_EXTENSIONS = {'php', 'exe', 'bat', 'sh', 'py', 'js', 'html', 'htm'}
+    ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+    DISALLOWED_EXTENSIONS = {"php", "exe", "bat", "sh", "py", "js", "html", "htm"}
 
-    extension = filename.rsplit('.', 1)[1].lower()   
+    extension = filename.rsplit(".", 1)[1].lower()   
 
     if extension not in ALLOWED_EXTENSIONS or extension in DISALLOWED_EXTENSIONS:
         return False
 
-    if any(char in filename for char in ['<', '>', ':', '"', '/', '\\', '|', '?', '*']):
+    if any(char in filename for char in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]):
         return False
     
     return True
 
-if __name__ == '__main__':
+def remove_old_images(results_history):
+    now = time.time()
+    valid_results_history = {}
+    for filename, history in results_history.items():
+        if now - history.get("uploaded_at") < EXPIRY_SECONDS:
+            valid_results_history[filename] = history
+        else:
+            file_path = os.path.join(app.config["UPLOAD_FOLDER"],filename)
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except OSError as e:
+                print("Failed to remove file")
+
+    return valid_results_history
+
+if __name__ == "__main__":
     app.run(debug=True)
